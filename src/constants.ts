@@ -31,7 +31,6 @@ export enum CommandContext {
     ExplorersCanCompare = 'gitlens:explorers:canCompare',
     GitExplorer = 'gitlens:gitExplorer',
     GitExplorerAutoRefresh = 'gitlens:gitExplorer:autoRefresh',
-    GitExplorerView = 'gitlens:gitExplorer:view',
     HasRemotes = 'gitlens:hasRemotes',
     HistoryExplorer = 'gitlens:historyExplorer',
     Key = 'gitlens:key',
@@ -113,6 +112,5 @@ export const ImageExtensions = ['.png', '.gif', '.jpg', '.jpeg', '.webp', '.tif'
 
 export enum WorkspaceState {
     GitExplorerAutoRefresh = 'gitlens:gitExplorer:autoRefresh',
-    GitExplorerView = 'gitlens:gitExplorer:view',
     ResultsExplorerKeepResults = 'gitlens:resultsExplorer:keepResults'
 }

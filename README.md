@@ -132,17 +132,15 @@ For more advanced customizations, refer to the [settings documentation](#gitlens
 ## Features
 
 ### GitLens Explorer
-A [customizable](#gitlens-explorer-settings "Jump to the GitLens Explorer settings") explorer to navigate and explore repositories or file histories. The *GitLens* explorer provides two views (modes) &mdash; a Repository view and a File History view.
-- A toolbar provides *Search Commits*, *Switch to Repository View* or *Switch to File History View*, and *Refresh* commands
-  - Quickly switch between views using the *Switch to Repository View* or *Switch to File History View* commands
-  - A context menu provides *Automatic Layout*, *List Layout*, *Tree Layout*, *Enable Automatic Refresh* or *Disable Automatic Refresh*, and *Follow Renames* or *Don't Follow Renames* commands
-
-#### Repository view
 <p align="center">
-  <img src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/ss-gitlens-explorer-repository.png" alt="GitLens Explorer Repository view" />
+  <img src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/ss-gitlens-explorer-repository.png" alt="GitLens Explorer" />
 </p>
 
-The repository view provides a full Git repository explorer, which has the following features,
+A [customizable](#gitlens-explorer-settings "Jump to the GitLens Explorer settings") explorer to navigate and explore repositories.
+- A toolbar provides *Search Commits*, and *Refresh* commands
+  - A context menu provides *Automatic Layout*, *List Layout*, *Tree Layout*, and *Enable Automatic Refresh* or *Disable Automatic Refresh* commands
+
+The explorer provides a full Git repository explorer, which has the following features,
 
 - **Repository Status**
   - Provides the name of the current branch, [optionally](#gitlens-explorer-settings "Jump to the GitLens explorer settings") its working tree status, and its upstream tracking branch and status (if available)
@@ -203,25 +201,17 @@ The repository view provides a full Git repository explorer, which has the follo
     - Revisions (commits) expand to show the set of files changed, complete with status indicators for adds, changes, renames, and deletes
       - See the *Revisions (commits) expand* section under **Branches** above for more details
 
-### File History view
-<p align="center">
-  <img src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/ss-gitlens-explorer-history.png" alt="GitLens Explorer File History view" />
-</p>
-
-The file history view provides the revision history of the current file, which has the following features,
-- Automatically updates to track the current editor
-- A context menu provides *Open File*, *Open File in Remote* (if available), and *Refresh* commands
-- An inline toolbar provides an *Open File* command
-- Context menus for each revision (commit) provides
-  - *Open Changes*, *Open Changes with Working File*, *Open File*, *Open Revision*, *Open File in Remote* (if available), *Open Revision in Remote* (if available), *Apply Changes*, *Compare with Selected* (when available), *Select for Compare*, and *Show Commit File Details* commands
-
 ---
 ### GitLens File History Explorer
 <p align="center">
   <img src="https://raw.githubusercontent.com/eamodio/vscode-gitlens/master/images/ss-gitlens-history-explorer.png" alt="GitLens File History Explorer" />
 </p>
 
-A [customizable](#gitlens-file-history-explorer-settings "Jump to the GitLens File History Explorer settings") stand-alone explorer to visualize the history of the current file &mdash; undocked version of the *GitLens* Explorer history view
+A [customizable](#gitlens-file-history-explorer-settings "Jump to the GitLens File History Explorer settings") explorer to visualize the revision history of the current file.
+- A toolbar provides a *Refresh* command
+  - A context menu provides a *Follow Renames* or *Don't Follow Renames* command
+
+The file history view provides the revision history of the current file, which has the following features,
 - Automatically updates to track the current editor
 - A context menu provides *Open File*, *Open File in Remote* (if available), and *Refresh* commands
 - An inline toolbar provides an *Open File* command
@@ -615,7 +605,6 @@ See also [Explorer Settings](#explorer-settings "Jump to the Explorer settings")
 |`gitlens.gitExplorer.includeWorkingTree`|Specifies whether to include working tree files inside the `Repository Status` node of the *GitLens* explorer
 |`gitlens.gitExplorer.location`|Specifies where to show the *GitLens* explorer<br />`gitlens` - adds to the GitLens view<br />`explorer` - adds to the Explorer view<br />`scm` - adds to the Source Control view
 |`gitlens.gitExplorer.showTrackingBranch`|Specifies whether to show the tracking branch when displaying local branches in the *GitLens* explorer"
-|`gitlens.gitExplorer.view`|Specifies the starting view of the *GitLens* explorer<br />`auto` - shows the last selected view, defaults to `repository`<br />`history` - shows the commit history of the current file<br />`repository` - shows a repository explorer"
 
 ### GitLens File History Explorer Settings
 
