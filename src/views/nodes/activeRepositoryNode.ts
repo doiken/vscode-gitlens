@@ -86,10 +86,10 @@ export class ActiveRepositoryNode extends ExplorerNode {
         return this._repositoryNode !== undefined ? this._repositoryNode.getChildren() : [];
     }
 
-    getTreeItem(): TreeItem {
+    async getTreeItem(): Promise<TreeItem> {
         const item =
             this._repositoryNode !== undefined
-                ? this._repositoryNode.getTreeItem()
+                ? await this._repositoryNode.getTreeItem()
                 : new TreeItem('No active repository', TreeItemCollapsibleState.None);
         item.id = this.id;
         return item;

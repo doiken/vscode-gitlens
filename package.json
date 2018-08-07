@@ -455,6 +455,12 @@
                     "description": "Specifies the format of committed changes in the `GitLens` and `GitLens Results` explorers\nAvailable tokens\n ${id} - commit id\n ${author} - commit author\n ${message} - commit message\n ${ago} - relative commit date (e.g. 1 day ago)\n ${date} - formatted commit date (format specified by `gitlens.defaultDateFormat`)\\n ${agoOrDate} - commit date specified by `gitlens.defaultDateStyle`\n ${authorAgo} - commit author, relative commit date\n ${authorAgoOrDate} - commit author, commit date specified by `gitlens.defaultDateStyle`\nSee https://github.com/eamodio/vscode-gitlens/wiki/Advanced-Formatting for advanced formatting",
                     "scope": "window"
                 },
+                "gitlens.explorers.defaultItemLimit": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Specifies the default number of items to show in an explorer list. Use 0 to specify no limit",
+                    "scope": "window"
+                },
                 "gitlens.explorers.stashFileFormat": {
                     "type": "string",
                     "default": "${filePath}",
@@ -3050,16 +3056,6 @@
                     "command": "gitlens.explorers.applyChanges",
                     "when": "viewItem == gitlens:file:stash",
                     "group": "1_gitlens@1"
-                },
-                {
-                    "command": "gitlens.openRepoInRemote",
-                    "when": "viewItem == gitlens:status && gitlens:hasRemotes",
-                    "group": "1_gitlens@1"
-                },
-                {
-                    "command": "gitlens.explorers.closeRepository",
-                    "when": "viewItem == gitlens:status",
-                    "group": "8_gitlens@1"
                 },
                 {
                     "command": "gitlens.openBranchesInRemote",

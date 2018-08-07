@@ -29,7 +29,7 @@ export class CommitsResultsNode extends ExplorerNode {
         ];
 
         if (log.truncated) {
-            children.push(new ShowAllNode('Show All Results', this, this.explorer));
+            children.push(new ShowAllNode('Results', this, this.explorer));
         }
         return children;
     }

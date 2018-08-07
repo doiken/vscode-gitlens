@@ -53,7 +53,6 @@ export enum ResourceType {
     Stash = 'gitlens:stash',
     StashFile = 'gitlens:file:stash',
     Stashes = 'gitlens:stashes',
-    Status = 'gitlens:status',
     StatusFile = 'gitlens:file:status',
     StatusFiles = 'gitlens:status:files',
     StatusFileCommits = 'gitlens:status:file-commits',
@@ -64,21 +63,16 @@ export enum ResourceType {
 
 export type Explorer = GitExplorer | HistoryExplorer | ResultsExplorer;
 
-// let id = 0;
-
 export abstract class ExplorerNode implements Disposable {
     readonly supportsPaging: boolean = false;
     maxCount: number | undefined;
 
     protected children: ExplorerNode[] | undefined;
     protected disposable: Disposable | undefined;
-    // protected readonly id: number;
 
     constructor(
         public readonly uri: GitUri
-    ) {
-        // this.id = id++;
-    }
+    ) {}
 
     dispose() {
         if (this.disposable !== undefined) {
@@ -142,12 +136,12 @@ export class MessageNode extends ExplorerNode {
     }
 }
 
-export class PagerNode extends ExplorerNode {
-    args: RefreshNodeCommandArgs = {};
+export abstract class PagerNode extends ExplorerNode {
+    protected _args: RefreshNodeCommandArgs = {};
 
     constructor(
-        private readonly message: string,
-        private readonly node: ExplorerNode,
+        protected readonly message: string,
+        protected readonly node: ExplorerNode,
         protected readonly explorer: Explorer
     ) {
         super(new GitUri());
@@ -172,19 +166,31 @@ export class PagerNode extends ExplorerNode {
         return {
             title: 'Refresh',
             command: this.explorer.getQualifiedCommand('refreshNode'),
-            arguments: [this.node, this.args]
+            arguments: [this.node, this._args]
         } as Command;
     }
 }
 
-export class ShowAllNode extends PagerNode {
-    args: RefreshNodeCommandArgs = { maxCount: 0 };
-
-    constructor(message: string, node: ExplorerNode, explorer: Explorer) {
+export class ShowMoreNode extends PagerNode {
+    constructor(
+        type: string,
+        node: ExplorerNode,
+        explorer: Explorer,
+        maxCount: number = Container.config.advanced.maxListItems
+    ) {
         super(
-            `${message} ${GlyphChars.Space}${GlyphChars.Dash}${GlyphChars.Space} this may take a while`,
+            maxCount === 0
+                ? `Show All ${type} ${GlyphChars.Space}${GlyphChars.Dash}${GlyphChars.Space} this may take a while`
+                : `Show More ${type}`,
             node,
             explorer
         );
+        this._args.maxCount = maxCount;
+    }
+}
+
+export class ShowAllNode extends ShowMoreNode {
+    constructor(type: string, node: ExplorerNode, explorer: Explorer) {
+        super(type, node, explorer, 0);
     }
 }

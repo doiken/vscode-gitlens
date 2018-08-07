@@ -27,8 +27,10 @@ export class GitStatus {
         changed: number;
     };
 
-    getDiffStatus(options: { empty?: string; expand?: boolean; prefix?: string; separator?: string } = {}): string {
-        options = { empty: '', prefix: '', separator: ' ', ...options };
+    getDiffStatus(
+        options: { empty?: string; expand?: boolean; prefix?: string; separator?: string; suffix?: string } = {}
+    ): string {
+        options = { empty: '', prefix: '', separator: ' ', suffix: '', ...options };
         if (this.files.length === 0) return options.empty!;
 
         if (this._diff === undefined) {
@@ -71,24 +73,30 @@ export class GitStatus {
                     this._diff.deleted
                 )} deleted`;
             }
-            return `${options.prefix}${status}`;
+            return `${options.prefix}${status}${options.suffix}`;
         }
 
         return `${options.prefix}+${this._diff.added}${options.separator}~${this._diff.changed}${options.separator}-${
             this._diff.deleted
-        }`;
+        }${options.suffix}`;
     }
 
-    getUpstreamStatus(options: { empty?: string; expand?: boolean; prefix?: string; separator?: string }): string {
+    getUpstreamStatus(options: {
+        empty?: string;
+        expand?: boolean;
+        prefix?: string;
+        separator?: string;
+        suffix?: string;
+    }): string {
         return GitStatus.getUpstreamStatus(this.upstream, this.state, options);
     }
 
     static getUpstreamStatus(
         upstream: string | undefined,
         state: { ahead: number; behind: number },
-        options: { empty?: string; expand?: boolean; prefix?: string; separator?: string } = {}
+        options: { empty?: string; expand?: boolean; prefix?: string; separator?: string; suffix?: string } = {}
     ): string {
-        options = { empty: '', prefix: '', separator: ' ', ...options };
+        options = { empty: '', prefix: '', separator: ' ', suffix: '', ...options };
         if (upstream === undefined || (state.behind === 0 && state.ahead === 0)) return options.empty!;
 
         if (options.expand) {
@@ -99,12 +107,12 @@ export class GitStatus {
             if (state.ahead) {
                 status += `${status === '' ? '' : options.separator}${Strings.pluralize('commit', state.ahead)} ahead`;
             }
-            return `${options.prefix}${status}`;
+            return `${options.prefix}${status}${options.suffix}`;
         }
 
         return `${options.prefix}${state.behind}${GlyphChars.ArrowDown}${options.separator}${state.ahead}${
             GlyphChars.ArrowUp
-        }`;
+        }${options.suffix}`;
     }
 }
 
@@ -112,10 +120,11 @@ export declare type GitStatusFileStatus = '!' | '?' | 'A' | 'C' | 'D' | 'M' | 'R
 
 export interface IGitStatusFile {
     status: GitStatusFileStatus;
+    readonly repoPath: string;
+    readonly indexStatus: GitStatusFileStatus;
+    readonly workTreeStatus: GitStatusFileStatus;
     readonly fileName: string;
     readonly originalFileName?: string;
-    readonly workTreeStatus: GitStatusFileStatus;
-    readonly indexStatus: GitStatusFileStatus;
 }
 
 export interface IGitStatusFileWithCommit extends IGitStatusFile {

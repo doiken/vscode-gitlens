@@ -9,17 +9,16 @@ import {
     TreeDataProvider,
     TreeItem,
     TreeView,
+    TreeViewVisibilityChangeEvent,
     Uri,
     window
 } from 'vscode';
 import { configuration, ExplorerFilesLayout, IExplorersConfig, IGitExplorerConfig } from '../configuration';
 import { CommandContext, setCommandContext, WorkspaceState } from '../constants';
 import { Container } from '../container';
-import { GitUri } from '../gitService';
 import { Logger } from '../logger';
-import { Functions } from '../system';
 import { RefreshNodeCommandArgs } from '../views/explorerCommands';
-import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode, RepositoryNode } from './nodes';
+import { ExplorerNode, MessageNode, RefreshReason, RepositoriesNode } from './nodes';
 
 export * from './nodes';
 
@@ -41,6 +40,11 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
     private _onDidChangeTreeData = new EventEmitter<ExplorerNode>();
     public get onDidChangeTreeData(): Event<ExplorerNode> {
         return this._onDidChangeTreeData.event;
+    }
+
+    private _onDidChangeVisibility = new EventEmitter<TreeViewVisibilityChangeEvent>();
+    public get onDidChangeVisibility(): Event<TreeViewVisibilityChangeEvent> {
+        return this._onDidChangeVisibility.event;
     }
 
     constructor() {
@@ -106,20 +110,20 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
             this.setAutoRefresh(Container.config.gitExplorer.autoRefresh);
         }
 
-        if (initializing) {
-            this.setRoot(await this.getRootNode());
-        }
-
         if (initializing || configuration.changed(e, configuration.name('gitExplorer')('location').value)) {
             if (this._disposable) {
                 this._disposable.dispose();
                 this._onDidChangeTreeData = new EventEmitter<ExplorerNode>();
             }
 
+            this.setRoot();
             this._tree = window.createTreeView(`gitlens.gitExplorer:${this.config.location}`, {
                 treeDataProvider: this
             });
-            this._disposable = this._tree;
+            this._disposable = Disposable.from(
+                this._tree,
+                this._tree.onDidChangeVisibility(this.onVisibilityChanged, this)
+            );
         }
 
         if (!initializing && this._root !== undefined) {
@@ -128,11 +132,13 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
     }
 
     private onRepositoriesChanged() {
-        this.clearRoot();
-
         Logger.log(`GitExplorer.onRepositoriesChanged`);
 
         this.refresh(RefreshReason.RepoChanged);
+    }
+
+    private onVisibilityChanged(e: TreeViewVisibilityChangeEvent) {
+        this._onDidChangeVisibility.fire(e);
     }
 
     get autoRefresh() {
@@ -146,23 +152,23 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         return { ...Container.config.explorers, ...Container.config.gitExplorer };
     }
 
+    get visible(): boolean {
+        return this._tree !== undefined ? this._tree.visible : false;
+    }
+
     getParent(): ExplorerNode | undefined {
         return undefined;
     }
 
-    private _loading: Promise<void> | undefined;
-
     async getChildren(node?: ExplorerNode): Promise<ExplorerNode[]> {
-        if (this._loading !== undefined) {
-            await this._loading;
-            this._loading = undefined;
-        }
-
         if (this._root === undefined) {
             return [new MessageNode('No repositories found')];
         }
 
-        if (node === undefined) return this._root.getChildren();
+        if (node === undefined) {
+            const root = await this._root;
+            return root !== undefined ? root.getChildren() : [new MessageNode('No repositories found')];
+        }
         return node.getChildren();
     }
 
@@ -174,20 +180,15 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         return `gitlens.gitExplorer.${command}`;
     }
 
-    async refresh(reason?: RefreshReason, root?: ExplorerNode) {
+    async refresh(reason?: RefreshReason) {
         if (reason === undefined) {
             reason = RefreshReason.Command;
         }
 
         Logger.log(`GitExplorer.refresh`, `reason='${reason}'`);
 
-        if (this._root === undefined) {
-            this.clearRoot();
-            this.setRoot(await this.getRootNode());
-        }
-
         if (this._root !== undefined) {
-            this._root.refresh();
+            await this._root.refresh();
         }
 
         this._onDidChangeTreeData.fire();
@@ -197,7 +198,12 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         Logger.log(`GitExplorer.refreshNode(${(node as { id?: string }).id || ''})`);
 
         if (args !== undefined && node.supportsPaging) {
-            node.maxCount = args.maxCount;
+            if (args.maxCount === undefined || args.maxCount === 0) {
+                node.maxCount = args.maxCount;
+            }
+            else {
+                node.maxCount = (node.maxCount || args.maxCount) + args.maxCount;
+            }
         }
 
         node.refresh();
@@ -243,9 +249,9 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
     }
 
     async show() {
-        if (this._root === undefined || this._tree === undefined) return;
+        if (this._tree === undefined || this._root === undefined) return;
 
-        const [child] = await this._root!.getChildren();
+        const [child] = await this._root.getChildren();
 
         try {
             await this._tree.reveal(child, { select: false });
@@ -255,43 +261,24 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         }
     }
 
-    private clearRoot() {
-        if (this._root === undefined) return;
+    async reveal(node: ExplorerNode) {
+        if (this._tree === undefined || this._root === undefined) return;
 
-        this._root.dispose();
-        this._root = undefined;
-    }
-
-    private async getRootNode(): Promise<ExplorerNode | undefined> {
-        const promise = Container.git.getRepositories();
-        this._loading = promise.then(_ => Functions.wait(0));
-
-        const repositories = [...(await promise)];
-        if (repositories.length === 0) return undefined;
-
-        const openedRepos = repositories.filter(r => !r.closed);
-        if (openedRepos.length === 0) return undefined;
-
-        if (openedRepos.length === 1) {
-            const repo = openedRepos[0];
-            return new RepositoryNode(GitUri.fromRepoPath(repo.path), repo, this, true);
+        try {
+            await this._tree.reveal(node, { select: false });
         }
-
-        return new RepositoriesNode(openedRepos, this);
+        catch (ex) {
+            Logger.error(ex);
+        }
     }
 
     private setFilesLayout(layout: ExplorerFilesLayout) {
         return configuration.updateEffective(configuration.name('gitExplorer')('files')('layout').value, layout);
     }
 
-    private setRoot(root: ExplorerNode | undefined): boolean {
-        if (this._root === root) return false;
-
-        if (this._root !== undefined) {
-            this._root.dispose();
+    private setRoot() {
+        if (this._root === undefined) {
+            this._root = new RepositoriesNode(this);
         }
-
-        this._root = root;
-        return true;
     }
 }

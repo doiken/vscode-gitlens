@@ -26,7 +26,6 @@ import {
     StashNode,
     StatusFileCommitsNode,
     StatusFileNode,
-    StatusNode,
     StatusUpstreamNode,
     TagNode
 } from './nodes';
@@ -106,8 +105,8 @@ export class ExplorerCommands implements Disposable {
         }
     }
 
-    private closeRepository(node: RepositoryNode | StatusNode) {
-        if (!(node instanceof RepositoryNode) && !(node instanceof StatusNode)) return;
+    private closeRepository(node: RepositoryNode) {
+        if (!(node instanceof RepositoryNode)) return;
 
         node.repo.closed = true;
     }

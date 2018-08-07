@@ -27,16 +27,13 @@ export class BranchesNode extends ExplorerNode {
         const branches = await this.repo.getBranches();
         if (branches === undefined) return [];
 
-        branches.sort((a, b) => (a.current ? -1 : 1) - (b.current ? -1 : 1) || a.name.localeCompare(b.name));
+        branches.sort((a, b) => a.name.localeCompare(b.name));
 
         // filter local branches
         const branchNodes = [
             ...Iterables.filterMap(branches, b => (b.remote ? undefined : new BranchNode(b, this.uri, this.explorer)))
         ];
         if (this.explorer.config.branches.layout === ExplorerBranchesLayout.List) return branchNodes;
-
-        // Take out the current branch, since that should always be first and un-nested
-        const current = branchNodes.length > 0 && branchNodes[0].current ? branchNodes.splice(0, 1)[0] : undefined;
 
         const hierarchy = Arrays.makeHierarchical(
             branchNodes,
@@ -46,14 +43,7 @@ export class BranchesNode extends ExplorerNode {
         );
 
         const root = new BranchOrTagFolderNode(this.repo.path, '', undefined, hierarchy, this.explorer);
-        const children = (await root.getChildren()) as (BranchOrTagFolderNode | BranchNode)[];
-
-        // If we found a current branch, insert it at the start
-        if (current !== undefined) {
-            children.splice(0, 0, current);
-        }
-
-        return children;
+        return root.getChildren();
     }
 
     async getTreeItem(): Promise<TreeItem> {
