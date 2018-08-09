@@ -187,7 +187,7 @@ export class HistoryExplorer implements TreeDataProvider<ExplorerNode>, Disposab
     private clearRoot() {
         if (this._root === undefined) return;
 
-        this._root.dispose();
+        // this._root.dispose();
         this._root = undefined;
     }
 
@@ -242,7 +242,7 @@ export class HistoryExplorer implements TreeDataProvider<ExplorerNode>, Disposab
         if (this._root === root) return false;
 
         if (this._root !== undefined) {
-            this._root.dispose();
+            // this._root.dispose();
         }
 
         this._root = root;

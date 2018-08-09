@@ -19,8 +19,6 @@ export class ComparisonResultsNode extends ExplorerNode {
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
-        this.resetChildren();
-
         const commitsQueryFn = (maxCount: number | undefined) =>
             Container.git.getLog(this.uri.repoPath!, {
                 maxCount: maxCount,
@@ -33,12 +31,10 @@ export class ComparisonResultsNode extends ExplorerNode {
             return Strings.pluralize('commit', count, { number: truncated ? `${count}+` : undefined, zero: 'No' });
         };
 
-        this.children = [
+        return [
             new CommitsResultsNode(this.uri.repoPath!, commitsLabelFn, commitsQueryFn, this.explorer),
             new StatusFilesResultsNode(this.uri.repoPath!, this.ref1.ref, this.ref2.ref, this.explorer)
         ];
-
-        return this.children;
     }
 
     async getTreeItem(): Promise<TreeItem> {

@@ -15,10 +15,8 @@ export class HistoryNode extends ExplorerNode {
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
-        this.resetChildren();
-
-        this.children = [new FileHistoryNode(this.uri, this.repo, this.explorer)];
-        return this.children;
+        // TODO: Cache?
+        return [new FileHistoryNode(this.uri, this.repo, this.explorer)];
     }
 
     getTreeItem(): TreeItem {

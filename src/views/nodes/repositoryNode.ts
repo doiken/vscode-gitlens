@@ -1,5 +1,5 @@
 'use strict';
-import { Disposable, TreeItem, TreeItemCollapsibleState, TreeViewVisibilityChangeEvent } from 'vscode';
+import { Disposable, TreeItem, TreeItemCollapsibleState } from 'vscode';
 import { GlyphChars } from '../../constants';
 import { Container } from '../../container';
 import { GitBranch, GitStatus, RepositoryFileSystemChangeEvent } from '../../git/git';
@@ -16,7 +16,9 @@ import { StatusFilesNode } from './statusFilesNode';
 import { StatusUpstreamNode } from './statusUpstreamNode';
 import { TagsNode } from './tagsNode';
 
-export class RepositoryNode extends ExplorerNode {
+export class RepositoryNode extends ExplorerNode implements Disposable {
+    private _children: ExplorerNode[] | undefined;
+    private _disposable: Disposable | undefined;
     private _status: Promise<GitStatus | undefined>;
 
     constructor(
@@ -31,13 +33,20 @@ export class RepositoryNode extends ExplorerNode {
         this._status = this.repo.getStatus();
     }
 
+    dispose() {
+        if (this._disposable !== undefined) {
+            this._disposable.dispose();
+            this._disposable = undefined;
+        }
+    }
+
     get id(): string {
         return `gitlens:repository(${this.repo.path})${this.active ? ':active' : ''}`;
     }
 
     async getChildren(): Promise<ExplorerNode[]> {
-        if (this.children === undefined) {
-            this.ensureSubscription();
+        if (this._children === undefined) {
+            const compact = false; // TODO: Add setting
 
             const children = [];
 
@@ -67,7 +76,9 @@ export class RepositoryNode extends ExplorerNode {
                     children.push(new StatusFilesNode(status, range, this.explorer, this.active));
                 }
 
-                children.push(new MessageNode(GlyphChars.Dash.repeat(2), ''));
+                if (!compact) {
+                    children.push(new MessageNode(GlyphChars.Dash.repeat(2), ''));
+                }
             }
 
             children.push(
@@ -76,14 +87,12 @@ export class RepositoryNode extends ExplorerNode {
                 new StashesNode(this.uri, this.repo, this.explorer, this.active),
                 new TagsNode(this.uri, this.repo, this.explorer, this.active)
             );
-            this.children = children;
+            this._children = children;
         }
-        return this.children;
+        return this._children;
     }
 
     async getTreeItem(): Promise<TreeItem> {
-        this.ensureSubscription();
-
         let label = `${this.active ? `Active Repository ${Strings.pad(GlyphChars.Dash, 1, 1)} ` : ''}${this.repo
             .formattedName || this.uri.repoPath}`;
 
@@ -141,13 +150,16 @@ export class RepositoryNode extends ExplorerNode {
             dark: Container.context.asAbsolutePath(`images/dark/icon-repo${iconSuffix}.svg`),
             light: Container.context.asAbsolutePath(`images/light/icon-repo${iconSuffix}.svg`)
         };
+
+        this.ensureSubscription();
+
         return item;
     }
 
     refresh() {
         this._status = this.repo.getStatus();
 
-        this.resetChildren();
+        this._children = undefined;
         this.ensureSubscription();
     }
 
@@ -155,27 +167,21 @@ export class RepositoryNode extends ExplorerNode {
         return this.explorer.config.includeWorkingTree;
     }
 
-    private ensureSubscription() {
-        // We only need to subscribe if auto-refresh is enabled, because if it becomes enabled we will be refreshed
-        if (!this.explorer.autoRefresh) {
-            if (this.disposable !== undefined) {
-                this.disposable.dispose();
-                this.disposable = undefined;
+    ensureSubscription() {
+        // We only need to subscribe if auto-refresh is enabled and we are visible
+        if (!this.explorer.autoRefresh || !this.explorer.visible) {
+            if (this._disposable !== undefined) {
+                this._disposable.dispose();
+                this._disposable = undefined;
             }
 
             return;
         }
 
-        // If we have a previous subscription, just kick out
-        if (this.disposable !== undefined) return;
+        // If we already have a subscription, just kick out
+        if (this._disposable !== undefined) return;
 
-        const disposables = [
-            // TODO: Move to RepositoriesNode
-            this.explorer.onDidChangeAutoRefresh(this.onAutoRefreshChanged, this),
-            // TODO: Move to RepositoriesNode
-            this.explorer.onDidChangeVisibility(this.onVisibilityChanged, this),
-            this.repo.onDidChange(this.onRepoChanged, this)
-        ];
+        const disposables = [this.repo.onDidChange(this.onRepoChanged, this)];
 
         if (this.includeWorkingTree) {
             disposables.push(this.repo.onDidChangeFileSystem(this.onFileSystemChanged, this), {
@@ -185,11 +191,7 @@ export class RepositoryNode extends ExplorerNode {
             this.repo.startWatchingFileSystem();
         }
 
-        this.disposable = Disposable.from(...disposables);
-    }
-
-    private onAutoRefreshChanged() {
-        this.ensureSubscription();
+        this._disposable = Disposable.from(...disposables);
     }
 
     private async onFileSystemChanged(e: RepositoryFileSystemChangeEvent) {
@@ -206,7 +208,7 @@ export class RepositoryNode extends ExplorerNode {
         }
 
         if (
-            this.children === undefined ||
+            this._children === undefined ||
             e.changed(RepositoryChange.Repository) ||
             e.changed(RepositoryChange.Config)
         ) {
@@ -216,28 +218,24 @@ export class RepositoryNode extends ExplorerNode {
         }
 
         if (e.changed(RepositoryChange.Stashes)) {
-            const node = this.children.find(c => c instanceof StashesNode);
+            const node = this._children.find(c => c instanceof StashesNode);
             if (node !== undefined) {
                 this.explorer.refreshNode(node);
             }
         }
 
         if (e.changed(RepositoryChange.Remotes)) {
-            const node = this.children.find(c => c instanceof RemotesNode);
+            const node = this._children.find(c => c instanceof RemotesNode);
             if (node !== undefined) {
                 this.explorer.refreshNode(node);
             }
         }
 
         if (e.changed(RepositoryChange.Tags)) {
-            const node = this.children.find(c => c instanceof TagsNode);
+            const node = this._children.find(c => c instanceof TagsNode);
             if (node !== undefined) {
                 this.explorer.refreshNode(node);
             }
         }
-    }
-
-    onVisibilityChanged(e: TreeViewVisibilityChangeEvent) {
-        Logger.log('onVisibilityChanged', e.visible);
     }
 }

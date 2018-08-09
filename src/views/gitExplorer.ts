@@ -106,7 +106,7 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
             setCommandContext(CommandContext.GitExplorer, this.config.enabled ? this.config.location : false);
         }
 
-        if (initializing || configuration.changed(e, configuration.name('gitExplorer')('autoRefresh').value)) {
+        if (configuration.changed(e, configuration.name('gitExplorer')('autoRefresh').value)) {
             this.setAutoRefresh(Container.config.gitExplorer.autoRefresh);
         }
 
@@ -129,12 +129,6 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         if (!initializing && this._root !== undefined) {
             this.refresh(RefreshReason.ConfigurationChanged);
         }
-    }
-
-    private onRepositoriesChanged() {
-        Logger.log(`GitExplorer.onRepositoriesChanged`);
-
-        this.refresh(RefreshReason.RepoChanged);
     }
 
     private onVisibilityChanged(e: TreeViewVisibilityChangeEvent) {
@@ -212,15 +206,7 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
         this._onDidChangeTreeData.fire(node === this._root ? undefined : node);
     }
 
-    private _autoRefreshDisposable: Disposable | undefined;
-
     async setAutoRefresh(enabled: boolean, workspaceEnabled?: boolean) {
-        if (this._autoRefreshDisposable !== undefined) {
-            this._autoRefreshDisposable.dispose();
-            this._autoRefreshDisposable = undefined;
-        }
-
-        let toggled = false;
         if (enabled) {
             if (workspaceEnabled === undefined) {
                 workspaceEnabled = Container.context.workspaceState.get<boolean>(
@@ -229,23 +215,13 @@ export class GitExplorer implements TreeDataProvider<ExplorerNode>, Disposable {
                 );
             }
             else {
-                toggled = workspaceEnabled;
                 await Container.context.workspaceState.update(WorkspaceState.GitExplorerAutoRefresh, workspaceEnabled);
-
-                this._onDidChangeAutoRefresh.fire();
-            }
-
-            if (workspaceEnabled) {
-                this._autoRefreshDisposable = Container.git.onDidChangeRepositories(this.onRepositoriesChanged, this);
-                Container.context.subscriptions.push(this._autoRefreshDisposable);
             }
         }
 
         setCommandContext(CommandContext.GitExplorerAutoRefresh, enabled && workspaceEnabled);
 
-        if (toggled) {
-            this.refresh(RefreshReason.AutoRefreshChanged);
-        }
+        this._onDidChangeAutoRefresh.fire();
     }
 
     async show() {

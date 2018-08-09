@@ -24,7 +24,7 @@ export class ActiveRepositoryNode extends ExplorerNode {
     }
 
     dispose() {
-        super.dispose();
+        // super.dispose();
 
         if (this._repositoryNode !== undefined) {
             this._repositoryNode.dispose();

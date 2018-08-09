@@ -63,25 +63,25 @@ export enum ResourceType {
 
 export type Explorer = GitExplorer | HistoryExplorer | ResultsExplorer;
 
-export abstract class ExplorerNode implements Disposable {
+export abstract class ExplorerNode {
     readonly supportsPaging: boolean = false;
     maxCount: number | undefined;
 
-    protected children: ExplorerNode[] | undefined;
-    protected disposable: Disposable | undefined;
+    // protected children: ExplorerNode[] | undefined;
+    // protected disposable: Disposable | undefined;
 
     constructor(
         public readonly uri: GitUri
     ) {}
 
-    dispose() {
-        if (this.disposable !== undefined) {
-            this.disposable.dispose();
-            this.disposable = undefined;
-        }
+    // dispose() {
+    //     if (this.disposable !== undefined) {
+    //         this.disposable.dispose();
+    //         this.disposable = undefined;
+    //     }
 
-        this.resetChildren();
-    }
+    //     this.resetChildren();
+    // }
 
     abstract getChildren(): ExplorerNode[] | Promise<ExplorerNode[]>;
     abstract getTreeItem(): TreeItem | Promise<TreeItem>;
@@ -92,12 +92,12 @@ export abstract class ExplorerNode implements Disposable {
 
     refresh(): void {}
 
-    resetChildren(): void {
-        if (this.children !== undefined) {
-            this.children.forEach(c => c.dispose());
-            this.children = undefined;
-        }
-    }
+    // resetChildren(): void {
+    //     if (this.children !== undefined) {
+    //         this.children.forEach(c => c.dispose());
+    //         this.children = undefined;
+    //     }
+    // }
 }
 
 export abstract class ExplorerRefNode extends ExplorerNode {
